@@ -1,0 +1,134 @@
+!<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" id="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        #joystick-container {
+            position: fixed;
+            left: 50px;
+            bottom: 50px;
+            width: 100px;
+            height: 100px;
+            z-index: 9000;
+        }
+
+        #joystick-base {
+            width: 100%;
+            height: 100%;
+            background: rgba(100, 100, 100, 0.5);
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        #joystick-head {
+            width: 40%;
+            height: 40%;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        SVG图形开发界面
+    </div>
+    <img src="./image.svg">
+    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="400" height="400">
+        <rect x="0" y="0" width="200" height="200" style="fill:#004d99;"></rect>
+        <rect x="200" y="200" width="200" height="200" style="fill:#004d99;"></rect>
+        <rect x="0" y="200" width="200" height="200" style="fill:#0066cc;"></rect>
+        <rect x="200" y="0" width="200" height="200" style="fill:#0066cc;"></rect>
+    </svg>
+    <div id="joystick-container">
+        <div id="joystick-base"></div>
+        <div id="joystick-head"></div>
+    </div>
+    <script>
+        const joystick = {
+            head: document.getElementById('joystick-head'),
+            baseRect: null,
+            maxDistance: 40, // 最大移动距离
+            currentPos: { x: 0, y: 0 },
+            
+            init() {
+                this.baseRect = document.getElementById('joystick-base').getBoundingClientRect();
+                this.addEventListeners();
+            },
+
+            addEventListeners() {
+                let isTouching = false;
+             
+                this.head.addEventListener('touchstart', (e) => {
+                    isTouching = true;
+                    this.handleMove(e.touches[0]);
+                    e.preventDefault();
+                });
+
+                document.addEventListener('touchmove', (e) => {
+                    if (isTouching) {
+                        this.handleMove(e.touches[0]);
+                        e.preventDefault();
+                    }
+                });
+
+                document.addEventListener('touchend', () => {
+                    isTouching = false;
+                    this.resetPosition();
+                });
+            },
+
+            handleMove(touch) {
+                const centerX = this.baseRect.left + this.baseRect.width/2;
+                const centerY = this.baseRect.top + this.baseRect.height/2;
+                
+                let deltaX = touch.clientX - centerX;
+                let deltaY = touch.clientY - centerY;
+                
+                // 限制摇杆移动范围
+                const distance = Math.sqrt(deltaX**2 + deltaY**2);
+                if (distance > this.maxDistance) {
+                    deltaX = (deltaX / distance) * this.maxDistance;
+                    deltaY = (deltaY / distance) * this.maxDistance;
+                }
+
+                // 更新位置
+                this.head.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                
+                // 存储标准化坐标
+                this.currentPos = {
+                    x: deltaX / this.maxDistance,
+                    y: deltaY / this.maxDistance
+                };
+            },
+
+            resetPosition() {
+                this.head.style.transform = 'translate(-50%, -50%)';
+                this.currentPos = { x: 0, y: 0 };
+            }
+        };
+
+        // 初始化摇杆
+        joystick.init();
+
+        // 获取摇杆位置的函数
+        function getJoystickPosition() {
+            return joystick.currentPos;
+        }
+
+        // 示例使用
+        setInterval(() => {
+            const pos = getJoystickPosition();
+            console.log(`X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}`);
+        }, 100);
+    </script>
+</body>
+
+</html>
